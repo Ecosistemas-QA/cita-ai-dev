@@ -53,3 +53,9 @@ next-env.d.ts
 
 # crash dumps
 *.stackdump
+
+# Vercel CLI
+.env*
+
+# ...pero el ejemplo SI se versiona: declara que variables hacen falta.
+!.env.example
