@@ -31,8 +31,12 @@ jobs:
       - name: Build
         run: pnpm build
         env:
-          # Valores de relleno: el build solo necesita que las variables existan,
-          # porque src/lib/config.ts corta la compilación si faltan. No se conecta
-          # a ningún servicio durante el build.
+          # Valores de relleno. El build no se conecta a ningún servicio, pero
+          # necesita que estas variables existan: config.ts corta la compilación si
+          # faltan las de Supabase, y el cliente de Resend se construye al importar
+          # el módulo, así que "next build" lo ejecuta al recolectar las rutas.
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+          RESEND_API_KEY: re_ci_placeholder
+          NEXT_PUBLIC_APP_URL: https://example.invalid
