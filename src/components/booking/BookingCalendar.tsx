@@ -1,9 +1,24 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { format } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  startOfDay,
+  isBefore,
+  isSameDay,
+  getDay,
+} from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar as CalendarIcon, Clock } from "lucide-react";
+import {
+  Loader2,
+  Calendar as CalendarIcon,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { TimeSlot } from "@/lib/availability/calculator";
 import { BookingForm } from "./BookingForm";
 
@@ -11,12 +26,17 @@ interface BookingCalendarProps {
   professionalId: string;
 }
 
+const DIAS_SEMANA = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+
 export function BookingCalendar({ professionalId }: BookingCalendarProps) {
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const hoy = startOfDay(new Date());
+
+  const [selectedDate, setSelectedDate] = useState<string>(format(hoy, "yyyy-MM-dd"));
+  const [mesVisible, setMesVisible] = useState<Date>(startOfMonth(hoy));
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Estado para el slot seleccionado (inicia el flujo de formulario)
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
 
@@ -39,32 +59,115 @@ export function BookingCalendar({ professionalId }: BookingCalendarProps) {
     fetchSlots();
   }, [selectedDate, professionalId]);
 
+  const mesAnterior = () =>
+    setMesVisible((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1));
+
+  // getMonth() arranca en 0, así que sumamos 1 para compensar el índice
+  // y 1 más para avanzar al mes que sigue.
+  const mesSiguiente = () =>
+    setMesVisible((m) => new Date(m.getFullYear(), m.getMonth() + 2, 1));
+
+  const diasDelMes = eachDayOfInterval({
+    start: startOfMonth(mesVisible),
+    end: endOfMonth(mesVisible),
+  });
+
+  // getDay() devuelve 0 para domingo; la grilla arranca en lunes.
+  const huecosIniciales = (getDay(startOfMonth(mesVisible)) + 6) % 7;
+
+  const puedeRetroceder = startOfMonth(mesVisible) > startOfMonth(hoy);
+
   // Si hay un slot seleccionado, mostramos el formulario
   if (selectedSlot) {
     return (
-      <BookingForm 
-        professionalId={professionalId} 
-        selectedSlot={selectedSlot} 
-        onCancel={() => setSelectedSlot(null)} 
+      <BookingForm
+        professionalId={professionalId}
+        selectedSlot={selectedSlot}
+        onCancel={() => setSelectedSlot(null)}
       />
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Selector de Fecha Simple */}
-      <div className="space-y-2">
+      {/* Calendario */}
+      <div className="space-y-3">
         <label className="text-sm font-semibold flex items-center">
           <CalendarIcon className="w-4 h-4 mr-2 text-primary" />
           Selecciona una fecha
         </label>
-        <input
-          type="date"
-          min={format(new Date(), "yyyy-MM-dd")}
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        />
+
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label="Mes anterior"
+              disabled={!puedeRetroceder}
+              onClick={mesAnterior}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            <span className="text-sm font-medium capitalize">
+              {format(mesVisible, "MMMM yyyy", { locale: es })}
+            </span>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label="Mes siguiente"
+              onClick={mesSiguiente}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+            {DIAS_SEMANA.map((d) => (
+              <div key={d} className="py-1">
+                {d}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: huecosIniciales }).map((_, i) => (
+              <div key={`hueco-${i}`} />
+            ))}
+
+            {diasDelMes.map((dia) => {
+              const clave = format(dia, "yyyy-MM-dd");
+              const pasado = isBefore(dia, hoy);
+              const elegido = clave === selectedDate;
+              const esHoy = isSameDay(dia, hoy);
+
+              return (
+                <button
+                  key={clave}
+                  type="button"
+                  disabled={pasado}
+                  onClick={() => setSelectedDate(clave)}
+                  className={[
+                    "h-9 rounded-md text-sm transition-colors",
+                    pasado && "text-muted-foreground/40 cursor-not-allowed",
+                    !pasado && !elegido && "hover:bg-accent",
+                    elegido && "bg-primary text-primary-foreground font-semibold",
+                    esHoy && !elegido && "border border-primary/50",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {format(dia, "d")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Lista de Slots */}
