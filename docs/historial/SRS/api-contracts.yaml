@@ -1,0 +1,319 @@
+
+openapi: 3.0.3
+info:
+  title: Cita.ai API
+  version: 1.0.0
+  description: API para la gestión de citas y disponibilidad para profesionales independientes.
+servers:
+  - url: http://localhost:3000
+    description: Servidor de Desarrollo
+  - url: https://staging.cita.ai
+    description: Servidor de Staging (hipotético)
+  - url: https://api.cita.ai
+    description: Servidor de Producción (hipotético)
+
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Registra un nuevo profesional (FR-001)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Laura Fernández
+                email:
+                  type: string
+                  format: email
+                  example: laura.fernandez@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: "S3cur3P@ssw0rd"
+              required: [name, email, password]
+      responses:
+        '201':
+          description: Profesional creado exitosamente. Devuelve el perfil y el token de sesión.
+        '400':
+          description: Error de validación o el email ya existe.
+          $ref: '#/components/responses/BadRequest'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Autentica a un profesional (FR-002)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required: [email, password]
+      responses:
+        '200':
+          description: Login exitoso. Devuelve el perfil y el token de sesión.
+        '401':
+          description: Credenciales incorrectas.
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/professionals/me:
+    get:
+      tags: [Professionals]
+      summary: Obtiene el perfil del profesional autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil del profesional.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Professional'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/professionals/me/availability:
+    put:
+      tags: [Professionals]
+      summary: Actualiza la disponibilidad semanal recurrente (FR-005)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/AvailabilityRule'
+            example:
+              - dayOfWeek: 1
+                startTime: "09:00"
+                endTime: "18:00"
+      responses:
+        '200':
+          description: Disponibilidad actualizada.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/public/availability/{slug}:
+    get:
+      tags: [Public]
+      summary: Obtiene los horarios disponibles para un profesional (FR-008)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: El slug público del profesional.
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha de inicio para buscar disponibilidad.
+      responses:
+        '200':
+          description: Una lista de horarios disponibles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: date-time
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/appointments:
+    post:
+      tags: [Appointments]
+      summary: Crea una nueva cita (FR-009)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                professionalSlug:
+                  type: string
+                startTime:
+                  type: string
+                  format: date-time
+                clientName:
+                  type: string
+                clientEmail:
+                  type: string
+                  format: email
+              required: [professionalSlug, startTime, clientName, clientEmail]
+      responses:
+        '201':
+          description: Cita creada exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: El horario ya no está disponible.
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: El profesional ha alcanzado el límite de clientes.
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: El profesional no fue encontrado.
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      tags: [Appointments]
+      summary: Lista las citas del profesional autenticado (FR-011)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Una lista de citas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    Professional:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        slug:
+          type: string
+        appointmentDurationMinutes:
+          type: integer
+    
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        professionalId:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [confirmed, cancelled]
+
+    AvailabilityRule:
+      type: object
+      properties:
+        dayOfWeek:
+          type: integer
+          description: 0 = Sunday, 6 = Saturday
+          minimum: 0
+          maximum: 6
+        startTime:
+          type: string
+          format: time
+          example: "09:00"
+        endTime:
+          type: string
+          format: time
+          example: "18:00"
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Un código de error interno.
+        message:
+          type: string
+          description: Un mensaje descriptivo del error.
+
+  responses:
+    BadRequest:
+      description: Bad Request - La petición es inválida o mal formada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized - El token de autenticación falta o es inválido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden - El usuario no tiene permisos para realizar esta acción.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not Found - El recurso solicitado no fue encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

@@ -1,0 +1,16 @@
+# Normaliza los finales de línea: en el repositorio siempre LF, sin importar
+# desde qué sistema se haya commiteado. Sin esta regla, un clon en Windows y uno
+# en macOS producen diffs enteros por saltos de línea.
+* text=auto eol=lf
+
+# Binarios: se dejan como están.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# El lockfile lo genera pnpm; no se revisa a mano en los diffs.
+pnpm-lock.yaml linguist-generated=true -diff
