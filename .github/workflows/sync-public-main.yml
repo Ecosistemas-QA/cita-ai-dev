@@ -1,0 +1,45 @@
+name: Sincronizar main pública
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-public-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'jlb984/cita-ai-dev' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Leer main del repositorio de origen
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Publicar únicamente main
+        shell: bash
+        env:
+          PUBLIC_MIRROR_SSH_KEY: ${{ secrets.PUBLIC_MIRROR_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$PUBLIC_MIRROR_SSH_KEY" ]]; then
+            echo 'Falta el secreto PUBLIC_MIRROR_SSH_KEY.' >&2
+            exit 1
+          fi
+          umask 077
+          key_dir=$(mktemp -d "$RUNNER_TEMP/public-mirror.XXXXXX")
+          trap 'rm -f -- "$key_dir/key" "$key_dir/known_hosts"; rmdir -- "$key_dir"' EXIT
+          printf '%s\n' "$PUBLIC_MIRROR_SSH_KEY" > "$key_dir/key"
+          unset PUBLIC_MIRROR_SSH_KEY
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$key_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $key_dir/key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$key_dir/known_hosts"
+          git push --no-follow-tags git@github.com:Ecosistemas-QA/cita-ai-dev.git HEAD:refs/heads/main

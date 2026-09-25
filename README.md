@@ -35,6 +35,10 @@ acá adentro, ese es el archivo que hay que leer primero.
 
 ## Puesta en marcha
 
+La plantilla pública está en **[Ecosistemas-QA/cita-ai-dev](https://github.com/Ecosistemas-QA/cita-ai-dev)**.
+Usá **Use this template** para crear un repositorio independiente con la rama `main`.
+La copia arranca con un historial nuevo y no recibe actualizaciones posteriores de la plantilla.
+
 Hace falta **Node 22** y **pnpm**.
 
 ```bash
@@ -61,3 +65,19 @@ pnpm lint
 Next.js 14 con App Router y TypeScript · Supabase para Postgres, autenticación y Row
 Level Security · Tailwind y Radix · react-hook-form con zod · date-fns con locale `es` ·
 Resend para los correos transaccionales · desplegado en Vercel.
+
+## Publicación de la plantilla
+
+El desarrollo se integra mediante PR en el repositorio privado `jlb984/cita-ai-dev`.
+El workflow `sync-public-main.yml` publica únicamente `main` en la plantilla pública,
+conservando los commits. No publica otras ramas ni tags. Si el destino tiene cambios
+divergentes, la sincronización falla: no sobrescribe su historial.
+
+La plantilla tiene GitHub Actions deshabilitado y no está conectada a un servicio de
+despliegue. Las copias creadas desde ella deben configurar sus propias integraciones.
+El workflow de sincronización solo corre en `jlb984/cita-ai-dev`; en las copias se omite.
+
+La autenticación usa el secreto de Actions `PUBLIC_MIRROR_SSH_KEY` del repositorio privado.
+Su clave pública está registrada como clave SSH con escritura exclusivamente en el destino.
+No es una variable de la aplicación y no va en `.env`. Para rotarla, registrá una clave nueva,
+actualizá el secreto y retirá la anterior después de verificar la sincronización.
