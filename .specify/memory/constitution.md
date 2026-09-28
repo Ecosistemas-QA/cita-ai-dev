@@ -4,7 +4,7 @@
 > otro** del repositorio, incluido `AGENTS.md`. Una spec que necesite una excepción la
 > declara con su motivo; nunca se asume.
 
-**Versión 1.3.0** · ratificada el 2026-06-08 · última enmienda: **2026-08-24** (§5).
+**Versión 2.0.0** · ratificada el 2026-06-08 · última enmienda: **2026-09-26** (§5).
 
 Cada regla tiene un identificador estable —`P-1`, `T-2`, `Q-3`— que no cambia aunque la
 regla se reescriba. Las specs, los planes y los ADR citan ese identificador cuando
@@ -103,9 +103,10 @@ define QA.
 feature que contradice esta constitución sin declarar la excepción. No bloquea una
 observación de estilo ni una sugerencia de alcance: se anotan y la feature sigue.
 
-**Q-4 · La revisión tiene plazo.** Dos días hábiles desde que la spec queda `en revisión`.
-Vencido el plazo sin respuesta, la feature avanza, y la observación que llegue después se
-trata como trabajo nuevo y no como un bloqueo retroactivo.
+**Q-4 · La revisión se coordina entre QA y desarrollo.** Al pasar la spec a `en revisión`,
+se acuerdan el responsable y una fecha orientativa según el alcance y la disponibilidad.
+Si hace falta más tiempo, se registra y se reprograma. El silencio no equivale a aprobación:
+la revisión queda pendiente hasta que se registre su resultado, conforme a `Q-1`.
 
 **Q-5 · El estado vive en la spec.** El campo `estado` del encabezado de cada `spec.md`
 —`borrador`, `en revisión`, `aprobada`, `implementada`, `fuera de alcance`— es la única
@@ -138,3 +139,4 @@ enmienda lo diga.
 | 1.1.0 | 2026-06-29 | Se agrega §3 completa, después de la revisión de privacidad del formulario público |
 | 1.2.0 | 2026-07-20 | `T-3`: se fija una zona horaria única para toda la aplicación y se descarta la zona por profesional |
 | 1.3.0 | 2026-08-24 | Se agrega §4, la compuerta de calidad. **La forma de registrar la revisión en el pipeline queda a definir con QA** |
+| 2.0.0 | 2026-09-26 | `Q-4`: se reemplazan el plazo fijo y el avance por falta de respuesta por una fecha acordada y reprogramable, con resultado explícito. Rige también para las revisiones pendientes; no exige volver a auditar features implementadas. La integración del registro en el pipeline sigue a definir con QA. |
