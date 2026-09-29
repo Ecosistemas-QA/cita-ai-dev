@@ -66,6 +66,28 @@ Next.js 14 con App Router y TypeScript · Supabase para Postgres, autenticación
 Level Security · Tailwind y Radix · react-hook-form con zod · date-fns con locale `es` ·
 Resend para los correos transaccionales · desplegado en Vercel.
 
+## Despliegues en Vercel
+
+El proyecto `cita-ai-dev` usa `release/2026.10` como **Production Branch**. `vercel.json`
+habilita despliegues automáticos únicamente desde esa rama; `main` y las ramas de PR
+no generan Preview. El CI de GitHub sigue verificando el build y los tipos por separado.
+
+No hay variables de entorno configuradas para Preview. Esta política evita intentar
+construir despliegues sin configuración; no agrega credenciales, no cambia Production
+ni repara los intentos fallidos anteriores. Tampoco impide un despliegue manual autorizado.
+
+Para activar la política en una rama, esa rama debe incorporar este archivo. Después de
+integrarlo en `main`, incorporalo a `release/2026.10` mediante el flujo de PR habitual.
+Las ramas antiguas que todavía no lo contengan pueden seguir intentando desplegar.
+
+Si creás una copia y conectás tu propio proyecto Vercel, reemplazá `release/2026.10` por
+tu rama de producción en `vercel.json` y configurá la misma **Production Branch** en Vercel.
+Por ejemplo, una copia que solo tenga `main` debe habilitar `main` explícitamente.
+La plantilla pública permanece sin conexión a Vercel y no despliega por sí misma.
+
+La configuración sigue las reglas de
+[despliegue por rama de Vercel](https://vercel.com/docs/project-configuration/git-configuration#git.deploymentenabled).
+
 ## Publicación de la plantilla
 
 El desarrollo se integra mediante PR en el repositorio privado `jlb984/cita-ai-dev`.
